@@ -1,0 +1,211 @@
+1- docker run --help
+ --rm    Automatically remove the container when it exits
+
+2-  docker run -it python:3.9 bash 
+
+ahmed@hammam:/# pip list
+Package    Version
+---------- -------
+pip        23.0.1
+setuptools 58.1.0
+wheel      0.42.0 
+
+
+_______________________________________________________________________________________________________________________
+
+3-
+
+SELECT
+    count(*) , CAST(lpep_dropoff_datetime AS DATE), CAST(lpep_pickup_datetime AS DATE)
+FROM 
+    green_trip_data
+WHERE
+    CAST(lpep_dropoff_datetime AS DATE) = '2019-09-18'
+  AND
+    CAST(lpep_pickup_datetime AS DATE) = '2019-09-18'
+GROUP BY 
+    CAST(lpep_dropoff_datetime AS DATE),
+	  CAST(lpep_pickup_datetime AS DATE);
+ 
+
+=========================================================
+ count  | lpep_dropoff_datetime |  lpep_pickup_datetime
+--------+-----------------------+------------------------
+ 15612	| 2019-09-18	          |  2019-09-18
+=========================================================
+
+
+_______________________________________________________________________________________________________________________
+
+4- 
+
+SELECT
+    CAST(lpep_pickup_datetime AS DATE), max(trip_distance) 
+FROM 
+    green_trip_data
+GROUP BY 
+    CAST(lpep_pickup_datetime AS DATE)
+ORDER BY 
+    max(trip_distance) DESC;
+	
+
+================================
+  max   | lpep_pickup_datetime 
+--------+-----------------------
+ 341.64 | 2019-09-26
+ 135.53 | 2019-09-21
+ 114.3 | 2019-09-16
+================================
+ 
+
+_______________________________________________________________________________________________________________________
+
+5- 
+
+SELECT
+    zones."Borough" AS pickup_borough, SUM(green_trip_data."total_amount") AS total_amount_sum
+FROM
+    green_trip_data
+JOIN
+    zones 
+ON 
+    green_trip_data."PULocationID" = zones."LocationID"
+WHERE
+    DATE(green_trip_data."lpep_pickup_datetime") = '2019-09-18'
+  AND
+    green_trip_data."PULocationID" IS NOT NULL
+GROUP BY
+    zones."Borough"
+HAVING
+    SUM(green_trip_data."total_amount") > 50000
+ORDER BY 
+    total_amount_sum DESC
+LIMIT 3;
+
+
+====================================
+ pickup_borough | total_amount_sum  
+----------------+-------------------
+ Brooklyn       | 96333.24000000025
+ Manhattan      | 92271.29999999938
+ Queens         | 78671.70999999995
+====================================
+
+
+_______________________________________________________________________________________________________________________
+
+6-
+
+SELECT
+    tz_dropoff."Zone" AS dropoff_zone,	
+	  max(green_trip_data."tip_amount") as max_tip
+FROM
+	  green_trip_data
+JOIN 
+    zones tz_dropoff ON green_trip_data."DOLocationID" = tz_dropoff."LocationID"
+JOIN
+    zones tz_pickup ON green_trip_data."PULocationID" = tz_pickup."LocationID"
+WHERE
+	  CAST(green_trip_data."lpep_pickup_datetime" AS DATE) >= '2019-09-01'
+	AND 
+    CAST(green_trip_data."lpep_pickup_datetime" AS DATE) <= '2019-09-30'
+	AND 
+    tz_pickup."Zone" = 'Astoria'
+GROUP BY
+	  tz_dropoff."Zone"
+ORDER BY
+	  max_tip DESC
+LIMIT 1;
+
+
+============================
+ dropoff_zone | max_tip 
+--------------+-------------
+ JFK Airport  | 62.31
+============================
+
+
+_______________________________________________________________________________________________________________________
+
+7- Terraform output
+
+
+google_bigquery_dataset.dataset: Creating...
+google_storage_bucket.demo-bucket: Creating...
+google_bigquery_dataset.dataset: Creation complete after 2s [id=projects/terrademo-412700/datasets/terra_dataset]
+google_storage_bucket.demo-bucket: Creation complete after 3s [id=terrademo-412700-bucket]
+
+Apply complete! Resources: 2 added, 0 changed, 0 destroyed.
+
+
+
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>.
+
+Terraform used the selected providers to generate the following execution plan. Resource actions are indicated with the following symbols:
+  + create
+
+Terraform will perform the following actions:
+
+  # google_bigquery_dataset.dataset will be created
+  + resource "google_bigquery_dataset" "dataset" {
+      + creation_time              = (known after apply)
+      + dataset_id                 = "terra_dataset"
+      + default_collation          = (known after apply)
+      + delete_contents_on_destroy = false
+      + effective_labels           = (known after apply)
+      + etag                       = (known after apply)
+      + id                         = (known after apply)
+      + is_case_insensitive        = (known after apply)
+      + last_modified_time         = (known after apply)
+      + location                   = "EU"
+      + max_time_travel_hours      = (known after apply)
+      + project                    = "terrademo-412700"
+      + self_link                  = (known after apply)
+      + storage_billing_model      = (known after apply)
+      + terraform_labels           = (known after apply)
+    }
+
+  # google_storage_bucket.demo-bucket will be created
+  + resource "google_storage_bucket" "demo-bucket" {
+      + effective_labels            = (known after apply)
+      + force_destroy               = true
+      + id                          = (known after apply)
+      + location                    = "EU"
+      + name                        = "terrademo-412700-bucket"
+      + project                     = (known after apply)
+      + public_access_prevention    = (known after apply)
+      + rpo                         = (known after apply)
+      + self_link                   = (known after apply)
+      + storage_class               = "STANDARD"
+      + terraform_labels            = (known after apply)
+      + uniform_bucket_level_access = (known after apply)
+      + url                         = (known after apply)
+
+      + lifecycle_rule {
+          + action {
+              + type = "AbortIncompleteMultipartUpload"
+            }
+          + condition {
+              + age                   = 1
+              + matches_prefix        = []
+              + matches_storage_class = []
+              + matches_suffix        = []
+              + with_state            = (known after apply)
+            }
+        }
+    }
+
+Plan: 2 to add, 0 to change, 0 to destroy.
+
+Do you want to perform these actions?
+  Terraform will perform the actions described above.
+  Only 'yes' will be accepted to approve.
+
+  Enter a value: yes
+
+google_bigquery_dataset.dataset: Creating...
+google_storage_bucket.demo-bucket: Creating...
+google_bigquery_dataset.dataset: Creation complete after 2s [id=projects/terrademo-412700/datasets/terra_dataset]
+google_storage_bucket.demo-bucket: Creation complete after 3s [id=terrademo-412700-bucket]
+
+Apply complete! Resources: 2 added, 0 changed, 0 destroyed.
